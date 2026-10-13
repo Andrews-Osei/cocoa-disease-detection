@@ -1,11 +1,11 @@
 """
 Cocoa Disease Detection Web Application
-Built with Streamlit and PyTorch EfficientNet-B0
+Production UX/UI Dashboard — Agricultural Diagnostic System
 """
 
-import io
+import base64
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 from PIL import Image
 import pandas as pd
 import altair as alt
@@ -15,115 +15,303 @@ from src.predictor import CocoaDiseasePredictor
 
 
 # Page Configuration
+LOGO_PATH = Path("assets/cocoa_logo.png")
+SVG_LOGO_PATH = Path("assets/cocoa_logo.svg")
+
 st.set_page_config(
     page_title="Cocoa Disease Detection",
-    page_icon="🍫",
+    page_icon=str(LOGO_PATH) if LOGO_PATH.exists() else "🍫",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom Styling
+
+def load_svg_as_base64(svg_path: Path) -> str:
+    """Read SVG file and return base64 encoded data URI."""
+    if svg_path.exists():
+        with open(svg_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+            return f"data:image/svg+xml;base64,{encoded}"
+    return ""
+
+
+# Tailored Design System: Matching Production Dashboard Mockup
 st.markdown(
     """
     <style>
-    /* Main container and typography */
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    
+
+    :root {
+        --color-brand-primary: #1E4620;
+        --color-brand-dark: #143516;
+        --color-brand-light: #2D6A4F;
+        --color-cocoa: #4A2B18;
+        --color-bg-canvas: #EFF2F5;
+        --color-card-bg: #FFFFFF;
+        --color-sidebar-bg: #F4F6F8;
+        --color-border: #E2E6EA;
+        --color-border-dashed: #2D6A4F;
+        --color-text-title: #1A1F24;
+        --color-text-body: #495057;
+        --color-text-muted: #6C757D;
+    }
+
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--color-text-body);
     }
-    
-    .main-header {
-        background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 50%, #52b788 100%);
-        padding: 2.2rem 2.5rem;
-        border-radius: 18px;
-        color: white;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 25px -5px rgba(27, 67, 50, 0.3);
+
+    .stApp {
+        background-color: var(--color-bg-canvas);
     }
-    
-    .main-header h1 {
-        color: #ffffff !important;
-        font-weight: 800;
-        font-size: 2.3rem;
-        margin-bottom: 0.4rem;
-        letter-spacing: -0.02em;
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: var(--color-sidebar-bg);
+        border-right: 1px solid var(--color-border);
     }
-    
-    .main-header p {
-        color: #d8f3dc;
-        font-size: 1.05rem;
-        margin-bottom: 0;
-        max-width: 800px;
-        line-height: 1.5;
+
+    .sidebar-header {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.8rem 0.2rem 1.4rem 0.2rem;
+        border-bottom: 1px solid var(--color-border);
+        margin-bottom: 1.2rem;
     }
-    
-    .metric-card {
-        background-color: var(--secondary-background-color, #f8f9fa);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 14px;
-        padding: 1.2rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-    }
-    
-    .metric-card h4 {
-        margin-top: 0;
-        margin-bottom: 0.3rem;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #555;
-    }
-    
-    .metric-card .value {
-        font-size: 1.7rem;
-        font-weight: 700;
-        color: #1b4332;
-    }
-    
-    .badge {
-        display: inline-block;
-        padding: 0.35rem 0.8rem;
-        border-radius: 9999px;
-        font-size: 0.82rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-    }
-    
-    .badge-healthy {
-        background-color: #d8f3dc;
-        color: #1b4332;
-        border: 1px solid #74c69d;
-    }
-    
-    .badge-disease {
-        background-color: #ffe3e3;
-        color: #c92a2a;
-        border: 1px solid #ffa8a8;
-    }
-    
-    .badge-warning {
-        background-color: #fff3bf;
-        color: #e67700;
-        border: 1px solid #ffd43b;
-    }
-    
-    .stButton>button {
+
+    .sidebar-logo {
+        width: 44px;
+        height: 44px;
         border-radius: 10px;
+        background: #FFFFFF;
+        border: 1px solid var(--color-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+    }
+
+    .sidebar-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .sidebar-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--color-text-title);
+        line-height: 1.2;
+    }
+
+    .sidebar-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 1.2rem;
+        margin-top: 2rem;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .user-avatar-badge {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #2D6A4F;
+        color: #FFFFFF;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .version-tag {
+        font-size: 0.78rem;
+        color: var(--color-text-muted);
         font-weight: 600;
+    }
+
+    /* Main Dashboard Header Card */
+    .dashboard-header-card {
+        background: var(--color-card-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+        padding: 1.8rem 2.2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .dashboard-header-title {
+        font-size: 1.95rem;
+        font-weight: 800;
+        color: var(--color-text-title);
+        margin: 0 0 0.4rem 0;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .dashboard-header-subtitle {
+        font-size: 0.98rem;
+        color: var(--color-text-muted);
+        margin: 0;
+        line-height: 1.5;
+        max-width: 920px;
+    }
+
+    /* Section Container Card */
+    .content-panel-card {
+        background: var(--color-card-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        min-height: 480px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .section-numbered-header {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--color-text-title);
+        margin-bottom: 1.2rem;
+    }
+
+    .number-badge {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background-color: #E9ECEF;
+        color: #212529;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Custom Dashed Uploader Accent */
+    div[data-testid="stFileUploader"] {
+        border-radius: 12px;
+    }
+
+    div[data-testid="stFileUploader"] section {
+        border: 2px dashed #3B7A57 !important;
+        background-color: #F6FBF7 !important;
+        border-radius: 12px !important;
+        padding: 1.4rem !important;
         transition: all 0.2s ease;
     }
-    
-    .disclaimer-box {
-        background-color: #f1f3f5;
-        border-left: 4px solid #495057;
-        padding: 1rem 1.2rem;
-        border-radius: 8px;
-        font-size: 0.88rem;
-        color: #495057;
-        margin-top: 2rem;
+
+    div[data-testid="stFileUploader"] section:hover {
+        background-color: #EEF8F0 !important;
+        border-color: #1E4620 !important;
+    }
+
+    /* Placeholder Box matching Mockup */
+    .placeholder-panel {
+        background-color: #F8F9FA;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        padding: 3rem 1.5rem;
+        text-align: center;
+        color: var(--color-text-muted);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex-grow: 1;
+        margin-top: 1rem;
+    }
+
+    .placeholder-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.8rem;
+        opacity: 0.75;
+    }
+
+    .placeholder-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #343A40;
+        margin-bottom: 0.35rem;
+    }
+
+    .placeholder-subtitle {
+        font-size: 0.86rem;
+        color: #6C757D;
+        line-height: 1.45;
+        max-width: 380px;
+    }
+
+    /* Diagnostic Result Presentation */
+    .result-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .pill-healthy {
+        background-color: #E8F5E9;
+        color: #1B5E20;
+        border: 1px solid #A5D6A7;
+    }
+
+    .pill-disease {
+        background-color: #FFEBEE;
+        color: #B71C1C;
+        border: 1px solid #FFCDD2;
+    }
+
+    .result-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #1A1F24;
+        margin: 0.6rem 0 0.2rem 0;
+    }
+
+    .result-score-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .result-score-val {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #1E4620;
+    }
+
+    /* Buttons */
+    div.stButton > button[kind="primary"] {
+        background-color: #1E4620 !important;
+        color: #FFFFFF !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        border: none !important;
+    }
+
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #153417 !important;
+    }
+
+    div.stButton > button[kind="secondary"] {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
     }
     </style>
     """,
@@ -131,271 +319,362 @@ st.markdown(
 )
 
 
-@st.cache_resource(show_spinner="Loading trained PyTorch model...")
+@st.cache_resource(show_spinner="Loading diagnostic model...")
 def get_predictor() -> CocoaDiseasePredictor:
     """Load model and metadata once on startup."""
     return CocoaDiseasePredictor(device="cpu")
 
 
-def render_sidebar(predictor: CocoaDiseasePredictor) -> None:
-    """Render informative sidebar with model provenance and verified metrics."""
+def render_sidebar(svg_data_uri: str) -> str:
+    """Render the left navigation sidebar matching the UI mockup."""
     with st.sidebar:
-        st.subheader("🌾 About the Project")
+        logo_tag = f'<img src="{svg_data_uri}" alt="Logo">' if svg_data_uri else "🍫"
+        st.markdown(
+            f"""
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    {logo_tag}
+                </div>
+                <div class="sidebar-title">
+                    Cocoa Disease<br>Detection
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        nav_choice = st.radio(
+            "Navigation",
+            ["Disease Analysis", "Data Explorer", "About System", "Settings"],
+            index=0,
+            label_visibility="collapsed",
+            format_func=lambda x: {
+                "Disease Analysis": "🌿  Disease Analysis",
+                "Data Explorer": "📊  Data Explorer",
+                "About System": "ℹ️  About System",
+                "Settings": "⚙️  Settings",
+            }[x],
+        )
+
+        st.markdown("<div style='flex-grow: 1;'></div>", unsafe_allow_html=True)
+
         st.markdown(
             """
-            This application uses deep learning (**EfficientNet-B0**) to classify cocoa pod and leaf images 
-            into **9 health and disease categories** commonly encountered in cacao farms.
-            """
+            <div class="sidebar-footer">
+                <div class="user-avatar-badge">U</div>
+                <div class="version-tag">v1.2.0</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-        st.markdown("---")
-        st.subheader("📊 Verified Model Specs")
-        specs = predictor.get_model_specs()
-        metrics = specs.get("evaluation_metrics", {})
+    return nav_choice
 
-        st.markdown(f"**Architecture:** `{specs.get('model_name', 'EfficientNet-B0')}`")
-        st.markdown(f"**Inference Device:** `{specs.get('device', 'cpu').upper()}`")
-        input_size = specs.get("input_size", (224, 224))
-        st.markdown(f"**Input Resolution:** `{input_size[0]} × {input_size[1]} RGB`")
-        st.markdown(f"**Categories Recognized:** `{specs.get('num_classes', 9)}`")
 
-        if metrics:
-            st.markdown("##### Test Set Evaluation")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Accuracy", f"{metrics.get('test_accuracy', 0.0) * 100:.1f}%")
-                st.metric("Recall", f"{metrics.get('test_recall_macro', 0.0) * 100:.1f}%")
-            with col2:
-                st.metric("Precision", f"{metrics.get('test_precision_macro', 0.0) * 100:.1f}%")
-                st.metric("F1 Score", f"{metrics.get('test_f1_macro', 0.0) * 100:.1f}%")
+def build_horizontal_bar_chart(data: list, predicted_class: str, is_healthy: bool) -> alt.Chart:
+    """Render a clean horizontal bar chart for all 9 classes."""
+    df = pd.DataFrame(data)
+    highlight_color = "#1E4620" if is_healthy else "#A82A2A"
+    neutral_color = "#D1D5DB"
 
-        st.markdown("---")
-        st.subheader("📚 Dataset Source")
-        st.markdown(
-            """
-            Trained on the **Unified Cocoa Disease Dataset**:  
-            [Kaggle Dataset Link](https://www.kaggle.com/datasets/danielohachor/cocoa-disease-unified)
-            """
+    chart = (
+        alt.Chart(df)
+        .mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4, height=18)
+        .encode(
+            x=alt.X(
+                "percentage:Q",
+                title="Probability (%)",
+                scale=alt.Scale(domain=[0, 100]),
+                axis=alt.Axis(grid=True, tickCount=5, format=".0f"),
+            ),
+            y=alt.Y(
+                "display_name:N",
+                title=None,
+                sort="-x",
+                axis=alt.Axis(labelLimit=240),
+            ),
+            color=alt.condition(
+                alt.datum.class_name == predicted_class,
+                alt.value(highlight_color),
+                alt.value(neutral_color),
+            ),
+            tooltip=[
+                alt.Tooltip("display_name:N", title="Category"),
+                alt.Tooltip("percentage:Q", title="Probability", format=".2f"),
+            ],
         )
-
-        st.markdown("---")
-        st.caption(
-            "Decision Support System v1.0 • Built with PyTorch & Streamlit Cloud"
-        )
+        .properties(height=260)
+        .configure_view(strokeWidth=0)
+    )
+    return chart
 
 
 def main() -> None:
     predictor = get_predictor()
-    render_sidebar(predictor)
+    svg_uri = load_svg_as_base64(SVG_LOGO_PATH)
 
-    # Application Header
+    active_page = render_sidebar(svg_uri)
+
+    # Top Header Card (Present across all views)
+    logo_header_tag = (
+        f'<img src="{svg_uri}" style="width: 28px; height: 28px; vertical-align: middle;">'
+        if svg_uri
+        else "🍫"
+    )
+
     st.markdown(
-        """
-        <div class="main-header">
-            <h1>🍫 Cocoa Disease Detection</h1>
-            <p>
-                Upload an image of a cocoa pod or leaf to detect signs of infectious fungal diseases, 
-                viral pathogens, pest infestations, or verify plant health in real-time.
+        f"""
+        <div class="dashboard-header-card">
+            <h1 class="dashboard-header-title">
+                Cocoa Disease Detection {logo_header_tag}
+            </h1>
+            <p class="dashboard-header-subtitle">
+                Agricultural plant pathology diagnostic system. Upload a photograph of a cocoa pod or leaf 
+                to evaluate symptoms against 9 recognized disease and health categories.
             </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    tab_predict, tab_library, tab_instructions = st.tabs(
-        ["🔍 Disease Diagnosis", "📖 Disease Library (9 Classes)", "🚀 Deployment & Help"]
-    )
+    if active_page == "Disease Analysis":
+        col1, col2 = st.columns([1, 1], gap="large")
 
-    with tab_predict:
-        col_input, col_output = st.columns([1, 1], gap="large")
-
-        with col_input:
-            st.subheader("1. Provide Cocoa Image")
-            
-            # Option to choose between file upload or built-in sample images
-            input_mode = st.radio(
-                "Select input method:",
-                ["Upload from device", "Try sample demo images"],
-                horizontal=True,
+        with col1:
+            st.markdown(
+                """
+                <div class="section-numbered-header">
+                    <span class="number-badge">1</span>
+                    <span>Upload Cocoa Specimen</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
-            selected_image: Optional[Image.Image] = None
-            image_name = "Image"
+            uploaded_file = st.file_uploader(
+                "Drag and drop file here",
+                type=["jpg", "jpeg", "png", "webp"],
+                help="Limit 200MB per file • JPEG, PNG, WEBP (Production Recommended: <15MB)",
+                label_visibility="collapsed",
+                key="file_uploader_specimen",
+            )
 
-            if input_mode == "Upload from device":
-                uploaded_file = st.file_uploader(
-                    "Choose a JPG, JPEG, or PNG image",
-                    type=["jpg", "jpeg", "png", "webp"],
-                    help="Upload a clear close-up photograph of a cocoa pod or leaf (max 15MB).",
-                )
-                if uploaded_file is not None:
-                    # Validate size (< 15MB)
-                    if uploaded_file.size > 15 * 1024 * 1024:
-                        st.error("Uploaded file is too large (>15MB). Please upload a smaller image.")
-                    else:
-                        try:
-                            selected_image = predictor.preprocessor.load_image(uploaded_file)
-                            image_name = uploaded_file.name
-                        except Exception as e:
-                            st.error(f"Could not read image: {e}")
-            else:
-                samples = {
-                    "Healthy Cocoa Pod": Path("assets/samples/healthy_pod_sample.jpg"),
-                    "Diseased Cocoa Pod": Path("assets/samples/diseased_pod_sample.jpg"),
-                }
-                sample_choice = st.selectbox("Select a demonstration sample:", list(samples.keys()))
-                sample_path = samples[sample_choice]
-                if sample_path.exists():
-                    selected_image = Image.open(sample_path)
-                    image_name = sample_choice
+            # Invalidate cached prediction when new file is chosen
+            file_sig = f"{uploaded_file.name}_{uploaded_file.size}" if uploaded_file else None
+            if st.session_state.get("active_file_sig") != file_sig:
+                st.session_state["active_file_sig"] = file_sig
+                st.session_state["prediction"] = None
 
-            if selected_image is not None:
+            loaded_image: Optional[Image.Image] = None
+
+            if uploaded_file is not None:
+                if uploaded_file.size > 200 * 1024 * 1024:
+                    st.error("Uploaded file exceeds 200 MB maximum threshold.")
+                else:
+                    try:
+                        loaded_image = predictor.preprocessor.load_image(uploaded_file)
+                    except Exception as err:
+                        st.error(f"Image error: {err}")
+
+            if loaded_image is not None and uploaded_file is not None:
                 st.image(
-                    selected_image,
-                    caption=f"Selected: {image_name} ({selected_image.width} × {selected_image.height} px)",
+                    loaded_image,
+                    caption=f"{uploaded_file.name} ({loaded_image.width}×{loaded_image.height} px)",
                     use_container_width=True,
                 )
-                predict_button = st.button("🔬 Predict Disease", type="primary", use_container_width=True)
+
+                btn_c1, btn_c2 = st.columns([1, 1])
+                with btn_c1:
+                    run_analyse = st.button(
+                        "Analyse Image",
+                        type="primary",
+                        use_container_width=True,
+                        key="btn_run_prediction",
+                    )
+                with btn_c2:
+                    run_clear = st.button(
+                        "Clear Image",
+                        type="secondary",
+                        use_container_width=True,
+                        key="btn_clear_specimen",
+                    )
+
+                if run_clear:
+                    st.session_state["active_file_sig"] = None
+                    st.session_state["prediction"] = None
+                    st.rerun()
+
+                if run_analyse:
+                    with st.spinner("Analyzing image features with EfficientNet-B0..."):
+                        try:
+                            st.session_state["prediction"] = predictor.predict(loaded_image)
+                        except Exception as e:
+                            st.error(f"Prediction failed: {e}")
             else:
-                st.info("👆 Please upload an image or choose a demo sample to begin.")
-                predict_button = False
-
-        with col_output:
-            st.subheader("2. Diagnosis & Prediction Results")
-
-            if selected_image is not None and predict_button:
-                with st.spinner("Analyzing image features with EfficientNet-B0..."):
-                    try:
-                        result = predictor.predict(selected_image)
-                        st.session_state["last_result"] = result
-                    except Exception as exc:
-                        st.error(f"Inference error: {exc}")
-                        st.session_state["last_result"] = None
-
-            result = st.session_state.get("last_result")
-
-            if result is not None:
-                pred_class = result["predicted_class"]
-                display_name = result["display_name"]
-                conf_pct = result["confidence_percentage"]
-                is_healthy = result["is_healthy"]
-                is_uncertain = result["is_uncertain"]
-
-                # Prominent Result Card
-                badge_class = "badge-healthy" if is_healthy else "badge-disease"
-                badge_text = "HEALTHY POD / LEAF" if is_healthy else "DISEASE / PEST DETECTED"
-
                 st.markdown(
-                    f"""
-                    <div class="metric-card" style="border-left: 5px solid {'#2d6a4f' if is_healthy else '#c92a2a'};">
-                        <span class="badge {badge_class}">{badge_text}</span>
-                        <h2 style="margin-top: 0.5rem; margin-bottom: 0.2rem; color: #1b4332;">{display_name}</h2>
-                        <p style="font-size: 1.15rem; margin-bottom: 0;">
-                            Estimated Confidence: <strong>{conf_pct:.2f}%</strong>
-                        </p>
+                    """
+                    <div class="placeholder-panel">
+                        <div class="placeholder-icon">📷</div>
+                        <div class="placeholder-title">No image selected</div>
+                        <div class="placeholder-subtitle">
+                            Upload a high-resolution, well-lit photo of a cocoa pod or leaf.<br>
+                            (Supported: JPG, JPEG, PNG, WEBP, Max 15MB)
+                        </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
-                # Confidence progress bar
-                st.progress(result["confidence"])
+        with col2:
+            st.markdown(
+                """
+                <div class="section-numbered-header">
+                    <span class="number-badge">2</span>
+                    <span>Diagnostic Results</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                # Uncertainty Warning if score is under threshold
-                if is_uncertain:
-                    st.warning(
-                        f"⚠️ **Low Confidence Notice ({conf_pct:.1f}%):** The model's highest probability is below "
-                        f"{result['uncertainty_threshold']*100:.0f}%. Visual symptoms may be ambiguous or unrepresented. "
-                        "We strongly recommend manual agronomic verification."
-                    )
+            prediction = st.session_state.get("prediction")
 
-                # Agronomic Description
-                if result.get("description"):
-                    with st.expander("🌾 Clinical Description & Symptoms", expanded=True):
-                        st.write(result["description"])
+            if prediction is not None:
+                pred_class = prediction["predicted_class"]
+                display_name = prediction["display_name"]
+                conf_pct = prediction["confidence_percentage"]
+                is_healthy = prediction["is_healthy"]
+                is_uncertain = prediction["is_uncertain"]
 
-                # Probability Breakdown Chart
-                st.markdown("#### Class Probability Distribution")
-                df_probs = pd.DataFrame(result["all_classes_sorted"])
-                df_probs["Percentage"] = df_probs["probability"] * 100.0
+                pill_class = "pill-healthy" if is_healthy else "pill-disease"
+                pill_label = "HEALTHY SPECIMEN" if is_healthy else "PATHOLOGY DETECTED"
 
-                chart = (
-                    alt.Chart(df_probs)
-                    .mark_bar(cornerRadiusTopRight=5, cornerRadiusBottomRight=5)
-                    .encode(
-                        x=alt.X("Percentage:Q", title="Probability (%)", scale=alt.Scale(domain=[0, 100])),
-                        y=alt.Y("display_name:N", title=None, sort="-x"),
-                        color=alt.condition(
-                            alt.datum.display_name == display_name,
-                            alt.value("#2d6a4f" if is_healthy else "#c92a2a"),
-                            alt.value("#adb5bd"),
-                        ),
-                        tooltip=["display_name", alt.Tooltip("Percentage:Q", format=".2f")],
-                    )
-                    .properties(height=280)
-                )
-
-                st.altair_chart(chart, use_container_width=True)
-
-                if st.button("🔄 Clear and Analyze Another Image"):
-                    st.session_state["last_result"] = None
-                    st.rerun()
-
-            elif selected_image is not None and not predict_button:
-                st.info("Click the **'🔬 Predict Disease'** button on the left to run classification.")
-            else:
-                st.write("Results and probability distribution will appear here once an image is analyzed.")
-
-    with tab_library:
-        st.subheader("📚 Cocoa Pathology Reference Library")
-        st.markdown(
-            "The model has been trained on the 9 distinct cocoa health conditions and diseases listed below:"
-        )
-        
-        cols = st.columns(3)
-        for i, cls_name in enumerate(predictor.classes):
-            with cols[i % 3]:
-                st.markdown(f"### {predictor.CLASS_DISPLAY_NAMES.get(cls_name, cls_name)}")
-                badge = "badge-healthy" if cls_name == "healthy" else "badge-disease"
                 st.markdown(
-                    f"<span class='badge {badge}'>{'BENIGN' if cls_name == 'healthy' else 'PATHOGEN / PEST'}</span>",
+                    f"""
+                    <div style="background: #FFFFFF; border: 1px solid #E2E6EA; border-radius: 12px; padding: 1.4rem; margin-bottom: 1rem; border-left: 4px solid {'#1E4620' if is_healthy else '#B71C1C'};">
+                        <span class="result-status-pill {pill_class}">{pill_label}</span>
+                        <div class="result-title">{display_name}</div>
+                        <div class="result-score-row">
+                            <span style="font-size: 0.9rem; color: #6C757D;">Model Probability:</span>
+                            <span class="result-score-val">{conf_pct:.1f}%</span>
+                        </div>
+                    </div>
+                    """,
                     unsafe_allow_html=True,
                 )
-                st.write(predictor.DISEASE_DESCRIPTIONS.get(cls_name, "No description available."))
-                st.markdown("---")
 
-    with tab_instructions:
-        st.subheader("🚀 Deployment on Streamlit Community Cloud")
+                if is_uncertain:
+                    st.warning(
+                        f"⚠️ Ambiguous Result ({conf_pct:.1f}%): Highest classification is below {prediction['uncertainty_threshold']*100:.0f}%. "
+                        "Symptoms may be atypical or overlapping. Verification by an agricultural specialist is recommended."
+                    )
+
+                if prediction.get("description"):
+                    with st.expander("Clinical Notes & Symptoms", expanded=True):
+                        st.write(prediction["description"])
+
+                st.markdown("<div style='font-size: 0.9rem; font-weight: 700; margin: 0.8rem 0 0.3rem 0; color: #1A1F24;'>Class Probability Breakdown</div>", unsafe_allow_html=True)
+                chart_data = [
+                    {
+                        "class_name": it["class"],
+                        "display_name": it["display_name"],
+                        "percentage": it["percentage"],
+                    }
+                    for it in prediction["all_classes_sorted"]
+                ]
+                chart = build_horizontal_bar_chart(chart_data, pred_class, is_healthy)
+                st.altair_chart(chart, use_container_width=True)
+
+            elif loaded_image is not None:
+                st.markdown(
+                    """
+                    <div class="placeholder-panel">
+                        <div class="placeholder-icon">🔬</div>
+                        <div class="placeholder-title">Ready for analysis</div>
+                        <div class="placeholder-subtitle">
+                            Specimen loaded. Click <strong>Analyse Image</strong> to begin diagnostic classification.
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    """
+                    <div class="placeholder-panel">
+                        <div class="placeholder-icon">📋</div>
+                        <div class="placeholder-title">No analysis available</div>
+                        <div class="placeholder-subtitle">
+                            Upload an image in the panel on the left to begin diagnostic classification.
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+    elif active_page == "Data Explorer":
+        st.subheader("📊 Dataset Explorer & Pathology Distribution")
         st.markdown(
             """
-            This application is ready to deploy directly on **Streamlit Community Cloud**:
-            
-            1. **Push to GitHub**:
-               Ensure your repository contains `app.py`, `requirements.txt`, `src/`, `models/best_model.pth`, and `artifacts/`.
-            2. **Log in to Streamlit Cloud**:
-               Navigate to [share.streamlit.io](https://share.streamlit.io/) and connect your GitHub account.
-            3. **Create New App**:
-               - Select repository: `<your-username>/cocoa-disease-detection`
-               - Branch: `main`
-               - Main file path: `app.py`
-            4. **Deploy**:
-               Click **Deploy!** Streamlit Cloud will install dependencies from `requirements.txt` and launch the app.
+            The model was trained on the **Unified Cocoa Disease Dataset** ([Kaggle](https://www.kaggle.com/datasets/danielohachor/cocoa-disease-unified)).
+            Below is the pathology reference table and performance breakdown:
             """
         )
 
-    # Persistent Agricultural Disclaimer
-    st.markdown(
-        """
-        <div class="disclaimer-box">
-            <strong>⚠️ Agricultural Decision Support Disclaimer:</strong><br>
-            Predictions generated by this machine learning model are intended solely for preliminary screening 
-            and agricultural decision support. Uncalibrated softmax probabilities do not guarantee definitive diagnoses. 
-            Always confirm symptoms with physical on-farm inspections and consult qualified agricultural extension 
-            specialists or certified plant pathologists prior to initiating pesticide or fungicide treatments.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        specs = predictor.get_model_specs()
+        metrics = specs.get("evaluation_metrics", {})
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Test Accuracy", f"{metrics.get('test_accuracy', 0.0)*100:.1f}%")
+        c2.metric("Precision (Macro)", f"{metrics.get('test_precision_macro', 0.0)*100:.1f}%")
+        c3.metric("Recall (Macro)", f"{metrics.get('test_recall_macro', 0.0)*100:.1f}%")
+        c4.metric("F1 Score (Macro)", f"{metrics.get('test_f1_macro', 0.0)*100:.1f}%")
+
+        st.markdown("---")
+        st.markdown("#### 9 Categories in the Training Distribution")
+        cols = st.columns(3)
+        for i, c_key in enumerate(predictor.classes):
+            with cols[i % 3]:
+                st.markdown(f"**{predictor.CLASS_DISPLAY_NAMES.get(c_key, c_key)}**")
+                st.caption(predictor.DISEASE_DESCRIPTIONS.get(c_key, ""))
+
+    elif active_page == "About System":
+        st.subheader("ℹ️ About the Cocoa Diagnostic System")
+        st.markdown(
+            """
+            This web application provides computer vision decision support for cacao producers and extension officers.
+
+            - **Deep Learning Model:** Fine-tuned `EfficientNet-B0` architecture
+            - **Input Resolution:** `224 × 224` pixels RGB
+            - **Normalization:** ImageNet distribution (`mean=[0.485, 0.456, 0.406]`, `std=[0.229, 0.224, 0.225]`)
+            - **Hosting Platform:** Streamlit Community Cloud
+            """
+        )
+
+        st.markdown("---")
+        st.markdown(
+            """
+            **⚠️ Agricultural Decision Support Notice:**  
+            Automated predictions are intended for preliminary screening. Consult qualified agricultural officers 
+            before applying chemical treatments or initiating crop eradication.
+            """
+        )
+
+    elif active_page == "Settings":
+        st.subheader("⚙️ System Preferences")
+        thresh = st.slider(
+            "Uncertainty Alert Threshold",
+            min_value=0.30,
+            max_value=0.80,
+            value=float(predictor.uncertainty_threshold),
+            step=0.05,
+            help="Flag predictions with top probabilities below this threshold as ambiguous.",
+        )
+        predictor.uncertainty_threshold = thresh
+        st.success(f"Uncertainty threshold set to {thresh*100:.0f}%.")
+
+        st.markdown("---")
+        st.markdown(f"**Device Mode:** `{predictor.device.type.upper()}`")
+        st.markdown(f"**Model Path:** `{predictor.model_path}`")
 
 
 if __name__ == "__main__":
