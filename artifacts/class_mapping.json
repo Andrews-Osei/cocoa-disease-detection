@@ -1,0 +1,46 @@
+{
+  "classes": [
+    "anthracnose",
+    "black_pod_rot",
+    "cssvd",
+    "frosty_pod_rot",
+    "healthy",
+    "mirid",
+    "monilia",
+    "pod_borer",
+    "witches_broom"
+  ],
+  "class_to_idx": {
+    "anthracnose": 0,
+    "black_pod_rot": 1,
+    "cssvd": 2,
+    "frosty_pod_rot": 3,
+    "healthy": 4,
+    "mirid": 5,
+    "monilia": 6,
+    "pod_borer": 7,
+    "witches_broom": 8
+  },
+  "idx_to_class": {
+    "0": "anthracnose",
+    "1": "black_pod_rot",
+    "2": "cssvd",
+    "3": "frosty_pod_rot",
+    "4": "healthy",
+    "5": "mirid",
+    "6": "monilia",
+    "7": "pod_borer",
+    "8": "witches_broom"
+  },
+  "display_names": {
+    "anthracnose": "Anthracnose (Colletotrichum spp.)",
+    "black_pod_rot": "Black Pod Rot (Phytophthora spp.)",
+    "cssvd": "Cocoa Swollen Shoot Virus (CSSVD)",
+    "frosty_pod_rot": "Frosty Pod Rot (Moniliophthora roreri)",
+    "healthy": "Healthy (No Disease Detected)",
+    "mirid": "Mirid / Capsid Damage",
+    "monilia": "Moniliasis (Monilia Pod Rot)",
+    "pod_borer": "Cocoa Pod Borer Damage",
+    "witches_broom": "Witches' Broom (Moniliophthora perniciosa)"
+  }
+}

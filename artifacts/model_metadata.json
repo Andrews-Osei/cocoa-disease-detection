@@ -1,0 +1,60 @@
+{
+    "model_name": "EfficientNet-B0",
+    "task_type": "Image Classification",
+    "num_classes": 9,
+    "classes": [
+        "anthracnose",
+        "black_pod_rot",
+        "cssvd",
+        "frosty_pod_rot",
+        "healthy",
+        "mirid",
+        "monilia",
+        "pod_borer",
+        "witches_broom"
+    ],
+    "class_to_idx": {
+        "anthracnose": 0,
+        "black_pod_rot": 1,
+        "cssvd": 2,
+        "frosty_pod_rot": 3,
+        "healthy": 4,
+        "mirid": 5,
+        "monilia": 6,
+        "pod_borer": 7,
+        "witches_broom": 8
+    },
+    "idx_to_class": {
+        "0": "anthracnose",
+        "1": "black_pod_rot",
+        "2": "cssvd",
+        "3": "frosty_pod_rot",
+        "4": "healthy",
+        "5": "mirid",
+        "6": "monilia",
+        "7": "pod_borer",
+        "8": "witches_broom"
+    },
+    "preprocessing_config": {
+        "input_size": [
+            224,
+            224
+        ],
+        "normalization_mean": [
+            0.485,
+            0.456,
+            0.406
+        ],
+        "normalization_std": [
+            0.229,
+            0.224,
+            0.225
+        ]
+    },
+    "evaluation_metrics": {
+        "test_accuracy": 0.7848148148148149,
+        "test_precision_macro": 0.8000396243684107,
+        "test_recall_macro": 0.7315179788697111,
+        "test_f1_macro": 0.746657905578638
+    }
+}
