@@ -33,3 +33,7 @@ secrets.toml
 # Scratch / temp files
 scratch/
 *.log
+
+# Local slide presentations and notes
+*slides*.md
+PRESENTATION_SLIDES.md
