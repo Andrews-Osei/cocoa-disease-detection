@@ -17,6 +17,7 @@ from src.predictor import CocoaDiseasePredictor
 # Page Configuration
 LOGO_PATH = Path("assets/cocoa_logo.png")
 SVG_LOGO_PATH = Path("assets/cocoa_logo.svg")
+BANNER_PATH = Path("assets/cocoa_farm_banner.jpg")
 
 st.set_page_config(
     page_title="Cocoa Disease Detection",
@@ -32,6 +33,17 @@ def load_svg_as_base64(svg_path: Path) -> str:
         with open(svg_path, "rb") as f:
             encoded = base64.b64encode(f.read()).decode("utf-8")
             return f"data:image/svg+xml;base64,{encoded}"
+    return ""
+
+
+def load_image_as_base64(img_path: Path) -> str:
+    """Read image file and return base64 encoded data URI."""
+    if img_path.exists():
+        with open(img_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+            ext = img_path.suffix.lstrip(".").lower()
+            mime = "image/jpeg" if ext in ["jpg", "jpeg"] else f"image/{ext}"
+            return f"data:{mime};base64,{encoded}"
     return ""
 
 
@@ -133,33 +145,57 @@ st.markdown(
         font-weight: 600;
     }
 
-    /* Main Dashboard Header Card */
+    /* Main Dashboard Header Card (Hero Banner with Cocoa Farm Background) */
     .dashboard-header-card {
-        background: var(--color-card-bg);
-        border: 1px solid var(--color-border);
         border-radius: 16px;
-        padding: 1.8rem 2.2rem;
+        padding: 2.2rem 2.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        box-shadow: 0 4px 18px rgba(18, 42, 22, 0.14);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .dashboard-header-title {
-        font-size: 1.95rem;
+        font-size: 2.15rem;
         font-weight: 800;
-        color: var(--color-text-title);
-        margin: 0 0 0.4rem 0;
+        color: #FFFFFF !important;
+        margin: 0 0 0.45rem 0;
         letter-spacing: -0.02em;
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.75rem;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
     }
 
     .dashboard-header-subtitle {
-        font-size: 0.98rem;
-        color: var(--color-text-muted);
+        font-size: 1.02rem;
+        color: #F0F7F1 !important;
         margin: 0;
-        line-height: 1.5;
-        max-width: 920px;
+        line-height: 1.55;
+        max-width: 880px;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .dashboard-header-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        margin-top: 1.1rem;
+    }
+
+    .header-stat-pill {
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        color: #FFFFFF;
+        padding: 0.32rem 0.85rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     }
 
     /* Section Container Card */
@@ -412,19 +448,26 @@ def build_horizontal_bar_chart(data: list, predicted_class: str, is_healthy: boo
 def main() -> None:
     predictor = get_predictor()
     svg_uri = load_svg_as_base64(SVG_LOGO_PATH)
+    banner_uri = load_image_as_base64(BANNER_PATH)
 
     active_page = render_sidebar(svg_uri)
 
-    # Top Header Card (Present across all views)
+    # Top Header Card (Hero Banner with Cocoa Farm Background)
     logo_header_tag = (
-        f'<img src="{svg_uri}" style="width: 28px; height: 28px; vertical-align: middle;">'
+        f'<img src="{svg_uri}" style="width: 34px; height: 34px; vertical-align: middle; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">'
         if svg_uri
         else "🍫"
     )
 
+    banner_bg_style = (
+        f"background: linear-gradient(135deg, rgba(15, 38, 18, 0.82) 0%, rgba(38, 22, 12, 0.80) 100%), url('{banner_uri}') center 38% / cover no-repeat;"
+        if banner_uri
+        else "background: linear-gradient(135deg, #1B4332 0%, #3D2314 100%);"
+    )
+
     st.markdown(
         f"""
-        <div class="dashboard-header-card">
+        <div class="dashboard-header-card" style="{banner_bg_style}">
             <h1 class="dashboard-header-title">
                 Cocoa Disease Detection {logo_header_tag}
             </h1>
@@ -432,6 +475,12 @@ def main() -> None:
                 Agricultural plant pathology diagnostic system. Upload a photograph of a cocoa pod or leaf 
                 to evaluate symptoms against 9 recognized disease and health categories.
             </p>
+            <div class="dashboard-header-badges">
+                <span class="header-stat-pill">🌿 9 Diagnostic Categories</span>
+                <span class="header-stat-pill">⚡ EfficientNet-B0 Backbone</span>
+                <span class="header-stat-pill">🎯 78.5% Test Accuracy</span>
+                <span class="header-stat-pill">🛡️ Decision Support</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
